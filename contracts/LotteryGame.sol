@@ -3,7 +3,7 @@ pragma solidity ^0.8.0;
 
 contract LotteryGame {
 
-    address private owner;
+    address public owner;
     uint256 private lotteryCount;
     uint256 private remainsBalance;
 
@@ -17,12 +17,12 @@ contract LotteryGame {
 
         uint256 balance;
         uint256 startingBalance;
-        uint256 startTimeCount;
-        uint256 finalTime;
+        uint256 lotteryTime;
         bool isActive;
-        address currentLeader;
         address winner;
     }
+
+    uint[] lotteryItem;
 
     constructor() {
         owner = msg.sender;
@@ -40,15 +40,16 @@ contract LotteryGame {
     event LotteryHasEnded(uint256 indexed lotteryId, address indexed winner, uint256 prize);
 
     function addLottery () external onlyOwner{
+        require(lotteryItem.length == lotteryCount, "Please wait to end previous lottery!");
+
         uint256 lotteryId = lotteryCount++;
-        uint _startTimeCount = block.timestamp;
+        uint _lotteryTime = block.timestamp;
         Lottery storage _lottery = lotteries[lotteryId];
 
-        _lottery.startTimeCount = _startTimeCount;
-        _lottery.finalTime = _startTimeCount + DURATION;
+        _lottery.lotteryTime = _lotteryTime + DURATION;
         _lottery.startingBalance +=  remainsBalance;
 
-        _lottery.isActive = true; 
+        _lottery.isActive = true;
 
 
         emit LotteryIsCreated(lotteryId);
@@ -62,51 +63,50 @@ contract LotteryGame {
         require(msg.value >= _bet, "Your bet is low then require!");
 
         _lottery.balance += msg.value;
-        _lottery.currentLeader = msg.sender;
-        _lottery.finalTime = block.timestamp + DURATION;
+        _lottery.winner = msg.sender;
+        _lottery.lotteryTime = block.timestamp + DURATION;
 
         emit BetterHasBeted(lotteryId, msg.sender, msg.value);
     }
 
     function getBalance(uint256 lotteryId) external view returns(uint256){
         return lotteries[lotteryId].balance;
-    } 
+    }
 
     function needBetToWin(uint256 lotteryId) external view returns(uint256){
         return lotteries[lotteryId].balance * INCREASEBET / 100;
     }
 
-    
     function getremainsBalance(uint256) external view returns(uint256){
         return remainsBalance;
     }
 
-        function getIsActive(uint256 lotteryId) external view returns(bool){
+    function getIsActive(uint256 lotteryId) external view returns(bool){
         return lotteries[lotteryId].isActive;
     }
 
-        function getTimeRemain(uint256 lotteryId) external view returns(uint256){
-            if(lotteries[lotteryId].isActive == false){
-                return 0;
-            }else if(lotteries[lotteryId].finalTime >= block.timestamp){
-                return lotteries[lotteryId].finalTime - block.timestamp;
-            }else 
+    function getTimeRemain(uint256 lotteryId) external view returns(uint256){
+        if(lotteries[lotteryId].isActive == false){
             return 0;
-        }
+        }else if(lotteries[lotteryId].lotteryTime >= block.timestamp){
+            return lotteries[lotteryId].lotteryTime - block.timestamp;
+        }else
+            return 0;
+    }
 
-            function getStartingBalance(uint256 lotteryId) external view returns(uint256){
+    function getStartingBalance(uint256 lotteryId) external view returns(uint256){
         return lotteries[lotteryId].startingBalance;
     }
-        
+
     function finishLottery(uint256 lotteryId) external{
         Lottery storage _lottery = lotteries[lotteryId];
 
-        require(block.timestamp >= _lottery.finalTime , "Lottery still active ,please bet");
+        require(block.timestamp >= _lottery.lotteryTime, "Lottery still active ,please bet");
 
         _lottery.isActive = false;
-        _lottery.winner = _lottery.currentLeader;
+        lotteryItem.push(lotteryId);
         uint256 prize = (_lottery.balance * 90) / 100;
-        remainsBalance +=_lottery.balance - prize;
+        remainsBalance += _lottery.balance - prize;
         address payable winner = payable(_lottery.winner);
         winner.transfer(prize);
 

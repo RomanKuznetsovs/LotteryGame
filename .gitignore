@@ -3,6 +3,8 @@ node_modules
 coverage
 coverage.json
 typechain
+.soliumignore
+.soliumrc.json
 
 #Hardhat files
 cache

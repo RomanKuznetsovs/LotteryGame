@@ -71,8 +71,4 @@ describe("after lottery initialization", function() {
         await ethers.provider.send('evm_mine');
         expect(Number(await lottery.getTimeRemain(lotteryId))).to.equal(0);
       })
-
-
-
-
 })
