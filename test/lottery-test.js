@@ -43,7 +43,7 @@ describe("after lottery initialization", function() {
     it("lottery: should be bet", async function() {
         await lottery.addLottery()
         const txLottery = lottery.connect(better1).bet(lotteryId,{ value: fee });
-        await expect(txLottery).to.emit(lottery, "BetterHasBeted");
+        await expect(txLottery).to.emit(lottery, "BetterHasBetted");
         const rLottery = await (await txLottery).wait();
         expect(rLottery.events[0].args[0]).to.equal(lotteryId);
         expect(rLottery.events[0].args[1]).to.equal(better1.address);
